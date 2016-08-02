@@ -12,12 +12,12 @@ import android.view.View;
  */
 public class MainView extends View {
     private   Mine mine;
-    private  boolean isFirst=true;
+    private  boolean isFirst=true;//标记是否是本局第一次点击屏幕
     private  Context context;
-    private final int mineNum=10;
-    private  final int ROW=15;
-    private  final int COL=8;
-    private   int TILE_WIDTH=50;
+    private final int mineNum=10;//产生的雷的个数
+    private  final int ROW=15;//要生成的矩阵高
+    private  final int COL=8;//要生成的矩阵宽
+    private   int TILE_WIDTH=50;//块大小
     private  boolean isFalse=false;
     public  MainView(Context context)
     {
@@ -28,15 +28,18 @@ public class MainView extends View {
         mine=new Mine((MainActivity.W-COL*TILE_WIDTH)/2,(MainActivity.H-ROW*TILE_WIDTH)/2,COL,ROW,mineNum,TILE_WIDTH);
         try {
             mine.init();
-            mine.create();
         }catch (Exception e){
             e.printStackTrace();
         }
     }
 
+    /**
+     * 游戏逻辑
+     */
     public void logic()
     {
         int count=0;
+
         for (int i=0;i<mine.mapRow;i++)
         {
             for (int j=0;j<mine.mapCol;j++)
@@ -47,6 +50,7 @@ public class MainView extends View {
                 }
             }
         }
+        //逻辑判断是否胜利
         if(count==mineNum)
         {
             new AlertDialog.Builder(context)
@@ -55,9 +59,10 @@ public class MainView extends View {
                     .setPositiveButton("继续", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
+
                             mine.init();
-                            mine.create();
                             invalidate();
+                            isFirst=true;
                         }
                     })
                     .setNegativeButton("退出", new DialogInterface.OnClickListener() {
@@ -72,12 +77,20 @@ public class MainView extends View {
     }
 
 
-
+    /**
+     * 刷新View
+     * @param canvas
+     */
     @Override
     protected void onDraw(Canvas canvas) {
         mine.draw(canvas);
     }
 
+    /**
+     * 点击屏幕事件
+     * @param event
+     * @return
+     */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if(event.getAction()==MotionEvent.ACTION_DOWN)
@@ -89,11 +102,12 @@ public class MainView extends View {
             {
                 int idxX=(x-mine.x)/mine.tileWidth;
                 int idxY=(y-mine.y)/mine.tileWidth;
-                mine.open(idxX,idxY,isFirst);
+                mine.open(new Mine.Point(idxX,idxY),isFirst);
                 isFirst=false;
-                invalidate();
+
                 if(mine.tile[idxY][idxX].value==-1)
                 {
+                    mine.isDrawAllMine=true;
                     new AlertDialog.Builder(context)
                             .setCancelable(false)
                             .setMessage("很遗憾，你踩到雷了！")
@@ -101,9 +115,10 @@ public class MainView extends View {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     mine.init();
-                                    mine.create();
-                                    invalidate();
                                     isFalse=true;
+                                    isFirst=true;
+
+                                    invalidate();
                                 }
                             })
                             .setNegativeButton("退出", new DialogInterface.OnClickListener() {
@@ -118,10 +133,14 @@ public class MainView extends View {
                 if(isFalse)
                 {
                     isFalse=false;
+                    invalidate();
                     return true;
                 }
                 logic();
+
+                invalidate();
             }
+
         }
         return true;
     }
